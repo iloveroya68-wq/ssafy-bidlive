@@ -1,0 +1,10 @@
+dist
+node_modules
+coverage
+.claude
+package-lock.json
+*.md
+
+# 벤더 자산 — @mediapipe/tasks-vision에서 그대로 복사한 emscripten 글루다(S15P11A704-699).
+# 우리가 고칠 파일이 아니고, 미니파이된 32만 자짜리라 서식 검사가 의미도 없다.
+public/mediapipe

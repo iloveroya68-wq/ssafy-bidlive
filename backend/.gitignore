@@ -1,0 +1,47 @@
+# Gradle
+.gradle/
+**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+/out/
+
+# Eclipse / Spring Tool Suite
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+bin/
+
+# Visual Studio Code
+.vscode/
+
+# Environment variables and local Spring configuration
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-local.properties
+
+# Logs and JVM crash dumps
+logs/
+*.log
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary editor files
+*.swp
+*.swo
+*~

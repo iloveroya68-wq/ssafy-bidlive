@@ -1,0 +1,17 @@
+# 줄바꿈을 저장소에서는 LF로 통일한다.
+# Windows·macOS 팀원이 섞여 있어도 "파일 전체가 바뀐" diff가 생기지 않게 한다.
+* text=auto eol=lf
+
+# 바이너리는 변환 대상에서 제외
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+
+# 자동 생성 파일은 diff·언어 통계에서 제외
+package-lock.json -diff linguist-generated

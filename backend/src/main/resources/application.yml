@@ -1,0 +1,163 @@
+spring:
+  application:
+    name: bidlive-backend
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            provider: kakao
+            client-id: "${KAKAO_CLIENT_ID}"
+            client-secret: "${KAKAO_CLIENT_SECRET}"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            client-name: Kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  datasource:
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/bidlive}"
+    username: "${DB_USERNAME:root}"
+    password: "${DB_PASSWORD}"
+
+  flyway:
+    enabled: true
+    # db/seed 는 스키마가 아니라 서비스 기준 데이터(온보딩 약관 등)다. 빈 테이블을 전제로 하는
+    # 통합 테스트가 깨지지 않도록 테스트용 application.yml 은 db/migration 만 지정한다.
+    locations: classpath:db/migration,classpath:db/seed
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      # 도메인 정책(스냅샷 이미지 5MB)보다 높게 두어 크기 초과가 컨테이너 오류가 아닌
+      # IMAGE_TOO_LARGE 응답으로 나가게 한다.
+      max-file-size: "${MULTIPART_MAX_FILE_SIZE:10MB}"
+      max-request-size: "${MULTIPART_MAX_REQUEST_SIZE:12MB}"
+      # 파트 해석을 핸들러 호출 시점으로 미뤄 한도 초과도 컨트롤러 예외 처리에서 다룬다.
+      resolve-lazily: true
+
+  data:
+    redis:
+      host: "${REDIS_HOST:localhost}"
+      port: "${REDIS_PORT:6379}"
+      connect-timeout: "${REDIS_CONNECT_TIMEOUT:2s}"
+      timeout: "${REDIS_TIMEOUT:2s}"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+server:
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics,prometheus"
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: "${spring.application.name}"
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+openvidu:
+  url: "${OPENVIDU_URL}"
+  secret: "${OPENVIDU_SECRET}"
+
+ai:
+  gms:
+    # SSAFY GMS는 OpenAI 호환 게이트웨이이므로 경로와 본문 형식은 그대로 두고 접속 정보만 바꾼다.
+    base-url: "${GMS_BASE_URL}"
+    api-key: "${GMS_API_KEY}"
+    # Vision(이미지 입력)을 지원하는 멀티모달 텍스트 모델이어야 한다.
+    inspection-model: "${GMS_INSPECTION_MODEL:gpt-4o-mini}"
+    timeout: "${GMS_TIMEOUT:15s}"
+    # 호출마다 Credit이 차감되므로 재시도는 전송 오류에 한해 최소로 둔다.
+    max-retries: "${GMS_MAX_RETRIES:1}"
+    max-concurrent-image-inspections: "${GMS_MAX_CONCURRENT_IMAGE_INSPECTIONS:3}"
+    max-image-count: "${GMS_MAX_IMAGE_COUNT:10}"
+  inspection:
+    # 최고 위험도가 reject 이상이면 REJECTED, review 이상이면 NEEDS_REVIEW다.
+    reject-threshold: "${AI_INSPECTION_REJECT_THRESHOLD:0.8}"
+    review-threshold: "${AI_INSPECTION_REVIEW_THRESHOLD:0.4}"
+
+# 채팅 비동기 LLM 검열 (AI-05). ai.gms와 같은 GMS 계정을 쓰므로 접속 env를 재사용한다 —
+# 설정 prefix만 다르고(코드가 chat.moderation.*로 읽는다) 자격 증명은 하나다.
+# 로컬 더미 GMS에서는 검열 잡이 재시도 끝에 DLQ로 빠질 뿐 채팅 자체는 정상 동작한다(.env 주석과 같은 운용).
+chat:
+  moderation:
+    enabled: "${CHAT_MODERATION_ENABLED:true}"
+    base-url: "${GMS_BASE_URL}"
+    api-key: "${GMS_API_KEY}"
+    # 추론 계열(gpt-5·o3)은 게이트웨이가 보내는 temperature:0을 거절하므로 4.1 계열을 쓴다.
+    model: "${CHAT_MODERATION_MODEL:gpt-4.1-mini}"
+
+aws:
+  s3:
+    bucket: "${AWS_S3_BUCKET}"
+    region: "${AWS_S3_REGION:ap-northeast-2}"
+    # S3 호환 저장소를 쓸 때만 지정한다. 비어 있으면 AWS 기본 엔드포인트를 사용한다.
+    endpoint: "${AWS_S3_ENDPOINT:}"
+    # 컨테이너 내부 endpoint와 브라우저가 접근할 공개 주소가 다를 때 지정한다.
+    public-base-url: "${AWS_S3_PUBLIC_BASE_URL:}"
+
+app:
+  oauth2:
+    frontend-callback-uri: "${FRONTEND_OAUTH_CALLBACK_URI:http://localhost:5173/oauth/callback}"
+    login-code-ttl: "${OAUTH_LOGIN_CODE_TTL:2m}"
+  jwt:
+    issuer: "${JWT_ISSUER:bidlive}"
+    secret-base64: "${JWT_SECRET_BASE64}"
+    access-token-ttl: "${JWT_ACCESS_TOKEN_TTL:30m}"
+    refresh-token-ttl: "${JWT_REFRESH_TOKEN_TTL:14d}"
+  media:
+    snapshot:
+      # auction 검증 구현이 없는 동안의 임시 우회 스위치이며 운영 환경에서 켜지 않는다.
+      # auction 도메인이 AuctionSnapshotVerifier를 구현하면 이 키를 제거한다.
+      skip-auction-verification: "${SNAPSHOT_SKIP_AUCTION_VERIFICATION:false}"
+  product-image:
+    max-size: "${PRODUCT_IMAGE_MAX_SIZE:5MB}"
+    allowed-content-types: "${PRODUCT_IMAGE_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/webp}"
+    key-prefix: "${PRODUCT_IMAGE_KEY_PREFIX:products}"
+  catch-up-summary:
+    # 조회마다 AI를 다시 부르지 않고 방별 최신 요약을 최대 2분 재사용한다.
+    cache-ttl: "${CATCH_UP_SUMMARY_CACHE_TTL:2m}"
+    # 새 STT 문장이 연속 도착해도 이 간격 안에는 기존 AI 문장을 재사용한다. 실시간 집계는 즉시 병합된다.
+    min-refresh-interval: "${CATCH_UP_SUMMARY_MIN_REFRESH_INTERVAL:30s}"
+    # 여러 시청자의 동시 조회가 같은 발화를 중복 요약하지 않도록 방별 재생성을 직렬화한다.
+    refresh-lock-ttl: "${CATCH_UP_SUMMARY_REFRESH_LOCK_TTL:1m}"
+    # 방송 중 재접속을 고려해 공개 집계와 STT 문장은 방송보다 길게, 영구 저장은 하지 않는다.
+    source-ttl: "${CATCH_UP_SUMMARY_SOURCE_TTL:6h}"
+    max-audio-chunk-bytes: "${CATCH_UP_MAX_AUDIO_CHUNK_BYTES:2097152}"
+    allowed-audio-types: "${CATCH_UP_ALLOWED_AUDIO_TYPES:audio/webm,audio/ogg,audio/wav,audio/x-wav}"
+    # GMS Whisper 호출은 지원된다. 마이크 수집과 Credit 사용을 승인한 환경에서만 명시적으로 켠다.
+    stt-enabled: "${GMS_STT_ENABLED:false}"
+    transcription-path: "${GMS_TRANSCRIPTION_PATH:/audio/transcriptions}"
+    transcription-model: "${GMS_TRANSCRIPTION_MODEL:whisper-1}"
+    ai-summary-enabled: "${GMS_CATCH_UP_SUMMARY_ENABLED:true}"
+    summary-model: "${GMS_CATCH_UP_SUMMARY_MODEL:gpt-4o-mini}"
+  chat:
+    slow-mode:
+      # 코드 기본값 3초는 연속 채팅이 바로 「전송 실패」로 떨어져 체감이 나빠 1초로 줄인다.
+      interval: "${CHAT_SLOW_MODE_INTERVAL:1s}"

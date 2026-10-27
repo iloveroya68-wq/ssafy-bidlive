@@ -1,0 +1,8 @@
+# git blame에서 무시할 커밋 (서식 변경 등 동작 변화 없는 대규모 커밋).
+#
+# 로컬 설정:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub 웹 blame은 이 파일을 자동으로 인식한다.
+
+# style: Prettier 서식 전체 적용
+a3afab01b0fc30d2b0d4abe9fe0227d2c8e271ff

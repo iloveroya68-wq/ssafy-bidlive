@@ -1,0 +1,16 @@
+{
+  // 저장할 때 Prettier로 자동 포맷 — 팀 전원 동일 서식 유지
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+
+  // 저장할 때 ESLint 자동 수정
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // 프로젝트의 TypeScript 버전을 사용 (vue-tsc 호환 — AGENTS.md 규칙 3)
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  "eslint.validate": ["javascript", "typescript", "vue"],
+  "files.eol": "\n"
+}

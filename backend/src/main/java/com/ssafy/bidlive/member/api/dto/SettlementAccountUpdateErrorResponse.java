@@ -1,0 +1,8 @@
+package com.ssafy.bidlive.member.api.dto;
+
+/** 정산 계좌 등록·변경 오류 코드와 안전한 메시지를 반환한다. */
+public record SettlementAccountUpdateErrorResponse(
+	String code,
+	String message
+) {
+}

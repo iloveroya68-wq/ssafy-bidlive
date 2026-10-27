@@ -1,0 +1,10 @@
+**/.env
+**/.env.*
+**/*.pem
+**/*.p12
+**/*.pfx
+**/*.key
+**/node_modules/
+**/dist/
+**/build/
+**/.gradle/
